@@ -1,0 +1,15 @@
+input_dim: null        # set at runtime from feature count
+condition_dim: null    # set at runtime: n_severity_buckets (+ portfolio_context_dim if used)
+latent_dim: 16
+hidden_dims: [64, 64]
+dropout: 0.10
+
+batch_size: 32
+learning_rate: 0.001
+n_epochs: 150
+kl_weight: 1.0
+early_stopping_patience: 20
+
+n_severity_buckets: 3
+use_portfolio_context: false   # ablation flag: adds portfolio_return to condition
+seed: 42

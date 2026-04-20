@@ -1,0 +1,25 @@
+raw_data_path: "data/raw/market_data.parquet"
+use_synthetic: true
+
+synthetic:
+  n_assets: 10
+  n_days: 2000
+  seed: 42
+  asset_names: null  # auto-generated as Asset_00 .. Asset_09
+  normal_vol: 0.010
+  stress_vol: 0.040
+  stress_prob: 0.08           # probability of entering stress episode each day
+  stress_duration_mean: 10    # mean stress episode length (days)
+  correlation_normal: 0.30
+  correlation_stress: 0.70
+
+portfolio:
+  weights_path: null          # null = equal weights
+  equal_weights: true
+
+preprocessing:
+  fill_method: "ffill"
+  max_missing_frac: 0.10      # drop column if > 10% missing
+  max_consecutive_fill: 5
+  winsorize_returns: true
+  winsorize_quantile: 0.001   # clip at [0.1%, 99.9%]

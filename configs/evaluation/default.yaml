@@ -1,0 +1,22 @@
+train_ratio: 0.60
+val_ratio:   0.20
+test_ratio:  0.20
+
+confidence_levels: [0.95, 0.99]
+
+backtesting:
+  kupiec_alpha: 0.05
+  christoffersen_alpha: 0.05
+
+bootstrap:
+  n_samples: 500
+  seed: 42
+
+rolling_window_eval:
+  window_years: 2.0
+  step_months: 3.0
+
+sensitivity:
+  alpha_values: [0.05, 0.08, 0.10, 0.12, 0.15, 0.20]
+  m_values: [0.10, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00]
+  M_values: [5, 10, 15, 20, 30, 40]

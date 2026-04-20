@@ -1,0 +1,20 @@
+experiment:
+  name: "ablation_no_proto"
+  seed: 42
+  output_dir: "outputs/experiments/ablation_no_proto"
+  description: >
+    Ablation: stress generation without normal-state prototype stabilization.
+    Uses stress index + CVAE generation but raw equal-weighted normal observations.
+    Methodological question: what does the prototype layer add for bulk stabilization?
+
+ablation:
+  use_stress_index: true
+  use_normal_prototypes: false
+  use_stress_generator: true
+
+_defaults_:
+  data: default
+  features: default
+  model/cvae: cvae
+  calibration: default
+  evaluation: default

@@ -1,0 +1,25 @@
+# Restricted calibration protocol
+# Parameters are calibrated ONLY on inner validation split — never on final test set.
+# Parameter hierarchy:
+#   alpha: main structural parameter (stress threshold)
+#   m:     tail enrichment parameter (synthetic mass ratio)
+#   M:     stability/compression parameter (prototype count)
+#   b:     secondary technical parameter (severity buckets)
+
+parameters:
+  alpha:
+    search_values: [0.05, 0.08, 0.10, 0.12, 0.15]
+    default: 0.10
+  m:
+    search_values: [0.25, 0.50, 0.75, 1.00, 1.50]
+    default: 0.50
+  M:
+    search_values: [10, 15, 20, 30, 40]
+    default: 20
+  b:
+    search_values: [2, 3, 4]
+    default: 3
+
+inner_val_ratio: 0.20      # fraction of train set held out for calibration
+metric: "quantile_loss_99"  # objective metric for parameter selection
+n_bootstrap: 100

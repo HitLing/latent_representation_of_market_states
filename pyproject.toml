@@ -1,0 +1,63 @@
+[project]
+name = "latent-representation-of-market-states"
+version = "0.1.0"
+description = "Tail-risk estimation via latent representation of market states — diploma thesis research project"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Research Author" }]
+
+dependencies = [
+    # Core scientific stack
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+    "scikit-learn>=1.3",
+    "statsmodels>=0.14",
+    # Deep learning
+    "torch>=2.1",
+    # Config & logging
+    "pyyaml>=6.0",
+    "pydantic>=2.5",
+    # Plotting
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    # Data IO
+    "pyarrow>=14.0",
+    "openpyxl>=3.1",
+    # CLI
+    "click>=8.1",
+    # Progress
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.1",
+]
+
+[project.scripts]
+prepare-data       = "scripts.prepare_data:main"
+train-normal-model = "scripts.train_normal_model:main"
+train-generator    = "scripts.train_generator:main"
+calibrate-method   = "scripts.calibrate_method:main"
+run-experiment     = "scripts.run_full_experiment:main"
+run-ablation       = "scripts.run_ablation:main"
+evaluate-oos       = "scripts.evaluate_oos:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

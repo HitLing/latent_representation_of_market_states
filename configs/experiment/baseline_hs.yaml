@@ -1,0 +1,19 @@
+experiment:
+  name: "baseline_hs"
+  seed: 42
+  output_dir: "outputs/experiments/baseline_hs"
+  description: >
+    Baseline: Historical Simulation Only.
+    No stress index, no distribution partition, no prototype layer,
+    no synthetic stress generation. All observations equally weighted.
+    Methodological question: what does ignoring regime structure cost?
+
+ablation:
+  use_stress_index: false
+  use_normal_prototypes: false
+  use_stress_generator: false
+
+_defaults_:
+  data: default
+  features: default
+  evaluation: default

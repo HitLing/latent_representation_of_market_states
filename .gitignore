@@ -1,0 +1,35 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Experiment outputs (large artifacts)
+outputs/experiments/
+outputs/models/
+outputs/metrics/
+outputs/figures/
+data/processed/
+data/artifacts/
+
+# Keep gitkeep files
+!outputs/experiments/.gitkeep
+!outputs/models/.gitkeep
+!outputs/metrics/.gitkeep
+!outputs/figures/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
+
+# PyTorch checkpoints
+*.pt
+*.pth
+
+# Misc
+.DS_Store
+*.log

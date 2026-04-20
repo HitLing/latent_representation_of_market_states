@@ -1,0 +1,23 @@
+experiment:
+  name: "full_method"
+  seed: 42
+  output_dir: "outputs/experiments/full_method"
+  description: >
+    Full method: formal stress index + distribution partition +
+    normal-state prototype layer + historical tail extractor +
+    conditional stress generator (CVAE) + restricted calibration +
+    weighted scenario assembly + weighted VaR/ES.
+
+ablation:
+  use_stress_index: true
+  use_normal_prototypes: true
+  use_stress_generator: true
+  stress_index_equal_weights: true    # ablation flag: false = alternative weighting
+
+_defaults_:
+  data: default
+  features: default
+  model/vae: vae
+  model/cvae: cvae
+  calibration: default
+  evaluation: default

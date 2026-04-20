@@ -1,0 +1,14 @@
+input_dim: null       # set at runtime from feature count
+latent_dim: 8
+hidden_dims: [64, 32]
+dropout: 0.10
+
+batch_size: 64
+learning_rate: 0.001
+n_epochs: 100
+kl_weight: 1.0
+early_stopping_patience: 15
+
+M: 20                    # number of normal-state prototypes
+prototype_method: "kmeans"   # kmeans | random
+seed: 42

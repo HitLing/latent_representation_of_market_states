@@ -1,0 +1,20 @@
+experiment:
+  name: "ablation_no_generator"
+  seed: 42
+  output_dir: "outputs/experiments/ablation_no_generator"
+  description: >
+    Ablation: stress-aware historical simulation without synthetic generation.
+    Uses stress index + partition + prototype layer but no CVAE.
+    Methodological question: does synthetic tail enrichment improve OOS risk estimation?
+
+ablation:
+  use_stress_index: true
+  use_normal_prototypes: true
+  use_stress_generator: false
+
+_defaults_:
+  data: default
+  features: default
+  model/vae: vae
+  calibration: default
+  evaluation: default

@@ -1,0 +1,21 @@
+window_size: 21    # T: rolling market-state window length (trading days)
+step_size: 1       # stride for rolling windows
+
+feature_groups:
+  returns: true
+  volatility: true
+  correlation: true
+  dispersion: true
+  portfolio_proxy: true
+
+volatility:
+  short_window: 5
+  long_window: 21
+  use_realized: true
+
+correlation:
+  rolling_window: 21
+  pairs_method: "mean_abs_corr"   # mean_abs_corr | max_corr
+
+dispersion:
+  method: "cross_sectional_std"
