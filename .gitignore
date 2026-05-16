@@ -8,6 +8,11 @@ wheels/
 
 # Virtual environments
 .venv
+venv/
+env/
+.env
+.env.*
+*.env
 
 # Experiment outputs (large artifacts)
 outputs/experiments/
@@ -16,6 +21,22 @@ outputs/metrics/
 outputs/figures/
 data/processed/
 data/artifacts/
+
+# Datasets — raw and intermediate data files
+data/raw/
+data/interim/
+*.parquet
+*.csv
+*.xlsx
+*.xls
+*.h5
+*.hdf5
+*.feather
+*.arrow
+*.pkl
+*.pickle
+*.npy
+*.npz
 
 # Keep gitkeep files
 !outputs/experiments/.gitkeep

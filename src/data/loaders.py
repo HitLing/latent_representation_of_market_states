@@ -198,6 +198,147 @@ def validate_returns(returns: pd.DataFrame) -> None:
         logger.warning(f"{extreme} observations with |return| > 50%")
 
 
+# ---------------------------------------------------------------------------
+# Yahoo Finance loader
+# ---------------------------------------------------------------------------
+
+def load_yahoo_returns(
+    tickers: list[str],
+    start: str,
+    end: str,
+    save_path: Path | str = Path("data") / "raw" / "us_etf_returns.parquet",
+) -> pd.DataFrame:
+    """Download Adj Close from Yahoo Finance and compute daily log-returns.
+
+    Parameters
+    ----------
+    tickers : list of ticker symbols recognised by yfinance.
+    start, end : ISO date strings, e.g. '2007-01-01'.
+    save_path : destination parquet file; parent dirs are created automatically.
+
+    Returns
+    -------
+    pd.DataFrame with DatetimeIndex named 'date', columns = tickers,
+    values = daily log-returns (first row with NaN dropped).
+    """
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise ImportError("Install yfinance: pip install yfinance") from exc
+
+    logger.info(f"Downloading {len(tickers)} tickers from Yahoo Finance ({start} – {end})")
+    raw = yf.download(tickers, start=start, end=end, auto_adjust=False, progress=False)
+
+    # yfinance returns MultiIndex columns when >1 ticker
+    if isinstance(raw.columns, pd.MultiIndex):
+        prices = raw["Adj Close"]
+    else:
+        prices = raw[["Adj Close"]]
+        prices.columns = tickers
+
+    prices.index = pd.to_datetime(prices.index)
+    prices.index.name = "date"
+
+    log_returns = np.log(prices / prices.shift(1)).iloc[1:]
+
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    log_returns.to_parquet(save_path)
+    logger.info(f"Saved US ETF log-returns -> {save_path}  shape={log_returns.shape}")
+
+    return log_returns
+
+
+# ---------------------------------------------------------------------------
+# MOEX loader
+# ---------------------------------------------------------------------------
+
+def load_moex_returns(
+    tickers: list[str],
+    start: str,
+    end: str,
+    save_path: Path | str = Path("data") / "raw" / "moex_returns.parquet",
+) -> pd.DataFrame:
+    """Download MOEX index history via apimoex and compute daily log-returns.
+
+    Uses the ISS MOEX REST API through the ``apimoex`` library.
+    Indices (IMOEX, RTSI, …) are fetched from engine=stock / market=index / board=SNDX.
+
+    Parameters
+    ----------
+    tickers : MOEX index codes, e.g. ['IMOEX', 'RTSI'].
+    start, end : ISO date strings.
+    save_path : destination parquet file.
+
+    Returns
+    -------
+    pd.DataFrame with DatetimeIndex named 'date', values = daily log-returns.
+    """
+    try:
+        import requests
+        import apimoex
+    except ImportError as exc:
+        raise ImportError(
+            "Install apimoex: pip install apimoex requests"
+        ) from exc
+
+    logger.info(f"Downloading {len(tickers)} MOEX tickers ({start} – {end})")
+
+    series: dict[str, pd.Series] = {}
+    with requests.Session() as session:
+        for ticker in tickers:
+            try:
+                data = apimoex.get_board_history(
+                    session,
+                    ticker,
+                    start=start,
+                    end=end,
+                    columns=("TRADEDATE", "CLOSE"),
+                    board="SNDX",
+                    market="index",
+                    engine="stock",
+                )
+            except Exception:
+                # Fall back to shares board for non-index tickers
+                logger.warning(f"{ticker}: index board failed, retrying on TQBR")
+                data = apimoex.get_board_history(
+                    session,
+                    ticker,
+                    start=start,
+                    end=end,
+                    columns=("TRADEDATE", "CLOSE"),
+                )
+
+            if not data:
+                logger.warning(f"{ticker}: no data returned, skipping")
+                continue
+
+            df = pd.DataFrame(data)
+            df["TRADEDATE"] = pd.to_datetime(df["TRADEDATE"])
+            df = df.set_index("TRADEDATE")["CLOSE"].rename(ticker)
+            series[ticker] = df
+
+    if not series:
+        raise RuntimeError("No MOEX data downloaded — check tickers and network access.")
+
+    prices = pd.DataFrame(series)
+    prices.index.name = "date"
+    prices = prices.sort_index()
+
+    log_returns = np.log(prices / prices.shift(1)).iloc[1:]
+
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    log_returns.to_parquet(save_path)
+    logger.info(f"Saved MOEX log-returns -> {save_path}  shape={log_returns.shape}")
+
+    return log_returns
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
 def _load_raw_file(path: Path) -> pd.DataFrame:
     """Load raw market data file (parquet or csv)."""
     if path.suffix == ".parquet":
@@ -211,3 +352,139 @@ def _load_raw_file(path: Path) -> pd.DataFrame:
         df.index = pd.to_datetime(df.index)
     df.index.name = "date"
     return df
+
+
+# ---------------------------------------------------------------------------
+# Download helpers (real-data acquisition)
+# ---------------------------------------------------------------------------
+
+def download_yahoo_returns(
+    tickers: list[str],
+    start: str,
+    end: str,
+    save_path: str | Path,
+) -> pd.DataFrame:
+    """Download adjusted close prices from Yahoo Finance and return log-returns.
+
+    Uses ``yfinance.download(auto_adjust=True)`` so the 'Close' column already
+    contains split- and dividend-adjusted prices.
+
+    Parameters
+    ----------
+    tickers : Yahoo Finance ticker symbols.
+    start, end : ISO date strings (e.g. '2007-01-01').
+    save_path : Destination parquet path; parent directories are created.
+
+    Returns
+    -------
+    pd.DataFrame, DatetimeIndex 'date', columns = tickers, log-returns (NaN row dropped).
+    """
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise ImportError("yfinance is required: pip install yfinance") from exc
+
+    logger.info(
+        f"Yahoo Finance: downloading {len(tickers)} tickers ({start} – {end})"
+    )
+    raw = yf.download(tickers, start=start, end=end, auto_adjust=True, progress=False)
+
+    if isinstance(raw.columns, pd.MultiIndex):
+        prices = raw["Close"]
+    else:
+        prices = raw[["Close"]]
+        prices.columns = tickers
+
+    prices.index = pd.to_datetime(prices.index)
+    prices.index.name = "date"
+
+    log_returns = np.log(prices / prices.shift(1)).iloc[1:]
+
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    log_returns.to_parquet(save_path)
+    logger.info(f"Saved -> {save_path}  shape={log_returns.shape}")
+    return log_returns
+
+
+def download_moex_returns(
+    tickers: list[str],
+    start: str,
+    end: str,
+    save_path: str | Path,
+) -> pd.DataFrame:
+    """Download MOEX index history via apimoex and return log-returns.
+
+    Fetches each ticker from ISS MOEX REST API (engine=stock, market=index,
+    board=SNDX).  Falls back to the default TQBR board if the index board
+    returns no data.
+
+    Parameters
+    ----------
+    tickers : MOEX index codes, e.g. ['IMOEX', 'RTSI'].
+    start, end : ISO date strings.
+    save_path : Destination parquet path.
+
+    Returns
+    -------
+    pd.DataFrame, DatetimeIndex 'date', columns = tickers, log-returns.
+    """
+    try:
+        import requests
+        import apimoex
+    except ImportError:
+        logger.warning(
+            "apimoex / requests not installed — skipping MOEX download. "
+            "Fix with: pip install apimoex requests"
+        )
+        return None
+
+    logger.info(f"MOEX: downloading {len(tickers)} tickers ({start} – {end})")
+
+    series: dict[str, pd.Series] = {}
+    with requests.Session() as session:
+        for ticker in tickers:
+            data = None
+            try:
+                data = apimoex.get_board_history(
+                    session, ticker,
+                    start=start, end=end,
+                    columns=("TRADEDATE", "CLOSE"),
+                    board="SNDX", market="index", engine="stock",
+                )
+            except Exception:
+                pass
+
+            if not data:
+                logger.warning(f"{ticker}: index board empty, retrying on TQBR")
+                try:
+                    data = apimoex.get_board_history(
+                        session, ticker,
+                        start=start, end=end,
+                        columns=("TRADEDATE", "CLOSE"),
+                    )
+                except Exception as exc2:
+                    logger.warning(f"{ticker}: TQBR also failed ({exc2}), skipping")
+                    continue
+
+            if not data:
+                logger.warning(f"{ticker}: no data returned, skipping")
+                continue
+
+            df = pd.DataFrame(data)
+            df["TRADEDATE"] = pd.to_datetime(df["TRADEDATE"])
+            series[ticker] = df.set_index("TRADEDATE")["CLOSE"].rename(ticker)
+
+    if not series:
+        raise RuntimeError("No MOEX data downloaded — check tickers and network access.")
+
+    prices = pd.DataFrame(series).sort_index()
+    prices.index.name = "date"
+
+    log_returns = np.log(prices / prices.shift(1)).iloc[1:]
+
+    save_path = Path(save_path)
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    log_returns.to_parquet(save_path)
+    logger.info(f"Saved -> {save_path}  shape={log_returns.shape}")
+    return log_returns
